@@ -1,0 +1,35 @@
+
+======================================================================
+REPORTE DE ANÁLISIS DE SENTIMIENTOS - TWITTER/X (Gemini Engine unificado)
+======================================================================
+Fecha de Análisis: 2026-07-14 20:14:02
+Modelo Utilizado: gemini-2.5-flash
+Modo de Procesamiento: Concurrente (máx 10 tareas)
+
+======================================================================
+📊 ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
+======================================================================
+Total de Publicaciones (Filas CSV): 40
+Total de Posts Analizados: 40
+Total de Comentarios Analizados: 59
+──────────────────────────────────────────────────────────────
+TOTAL DE ELEMENTOS ANALIZADOS: 99
+(Posts + Comentarios)
+
+======================================================================
+📊 DISTRIBUCIÓN DE SENTIMIENTOS
+======================================================================
+• Positivo: 2 (2.02%)
+• Negativo: 7 (7.07%)
+• Neutral:  90 (90.91%)
+
+======================================================================
+⚡ MÉTRICAS DE RENDIMIENTO
+======================================================================
+Tiempo Total de Procesamiento: 8.7121 segundos
+Tiempo Promedio por Publicación: 0.2178 segundos
+Tiempo Total en Llamadas API: 29.4762 segundos
+Total de Llamadas API: 9
+======================================================================
+✅ Resultados con Trazabilidad Completa: analisis_twitter_completo.json
+======================================================================

@@ -1,0 +1,36 @@
+
+        ======================================================================
+        REPORTE DE ANÁLISIS DE SENTIMIENTOS - INSTAGRAM (Gemini Mapped Engine)
+        ======================================================================
+        Fecha de Análisis: 2026-07-14 20:13:57
+        Modelo Utilizado: gemini-2.5-flash
+        Modo de Procesamiento: Concurrente (máx 10 tareas)
+
+        ======================================================================
+        📊 ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
+        ======================================================================
+        Total de Publicaciones (Filas CSV): 50
+        Total de Posts Analizados: 50
+        Total de Comentarios Analizados: 0
+        ──────────────────────────────────────────────────────────────
+        TOTAL DE ELEMENTOS ANALIZADOS: 50
+        (Posts + Comentarios)
+
+        ======================================================================
+        📊 DISTRIBUCIÓN DE SENTIMIENTOS
+        ======================================================================
+        • Positivo: 0 (0.0%)
+        • Negativo: 0 (0.0%)
+        • Neutral:  50 (100.0%)
+
+        ======================================================================
+        ⚡ MÉTRICAS DE RENDIMIENTO
+        ======================================================================
+        Tiempo Total de Procesamiento: 3.2394 segundos
+        Tiempo Promedio por Publicación: 0.0648 segundos
+        Tiempo Total en Llamadas API: 18.8543 segundos
+        Total de Llamadas API: 9
+        ======================================================================
+        ✅ Resultados completos con Trazabilidad: analisis_instagram_completo.json
+        ======================================================================
+        
