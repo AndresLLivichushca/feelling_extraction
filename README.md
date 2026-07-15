@@ -44,36 +44,40 @@ El sistema se encuentra configurado por defecto para auditar el impacto tecnoló
 - **Asimilación Dinámica de Errores**: Reclasificación automática de fallas de tokens o de red en categorías neutras para garantizar un reporte visual consistente ante el tribunal evaluador.
 
 ---
-
 ## 🏗️ Arquitectura de Cómputo Paralelo
 
 ```mermaid
 graph TB
-    A[Main GUI - Tkinter Template] --> B[Multiprocessing Manager]
-    B --> C[CSV Writer Process - Consumidor]
-    B --> D[Instagram Scraper Process - Productor]
-    B --> E[Facebook Scraper Process - Productor]
-    B --> F[Twitter/X Scraper Process - Productor]
-    
-    D --> G[Playwright Browser Local]
+
+    A["Main GUI<br/>Tkinter"] --> B["Multiprocessing Manager"]
+
+    B --> C["CSV Writer Process<br/>(Consumidor)"]
+    B --> D["Instagram Scraper<br/>(Productor)"]
+    B --> E["Facebook Scraper<br/>(Productor)"]
+    B --> F["Twitter/X Scraper<br/>(Productor)"]
+
+    D --> G["Playwright Browser"]
     E --> G
     F --> G
-    
-    D --> H[Result Queue - Estructura FIFO]
+
+    D --> H["multiprocessing.Queue<br/>(FIFO)"]
     E --> H
     F --> H
-    
+
     H --> C
-    C --> I[resultados.csv - Materia Prima]
-    
-    I --> J[Pipeline de Sentimientos - Dashboard AI]
-    J --> K[Instagram Analyzer - Gemini 2.5 Flash]
-    J --> L[Twitter Analyzer - Gemini 2.5 Flash]
-    J --> M[Facebook Analyzer - OpenAI gpt-4o-mini]
-    
-    K --> N[analisis_instagram_completo.json]
-    L --> O[analisis_twitter_completo.json]
-    M --> P[analisis_facebook_completo.json]
+
+    C --> I["resultados.csv"]
+
+    I --> J["Pipeline de Análisis de Sentimientos"]
+
+    J --> K["Instagram Analyzer<br/>Gemini 2.5 Flash"]
+    J --> L["Twitter/X Analyzer<br/>Gemini 2.5 Flash"]
+    J --> M["Facebook Analyzer<br/>GPT-4o Mini"]
+
+    K --> N["analisis_instagram_completo.json"]
+    L --> O["analisis_twitter_completo.json"]
+    M --> P["analisis_facebook_completo.json"]
+```
 
 # Justificación Técnica
 
