@@ -38,23 +38,6 @@ class FacebookScraper:
                 print(f"[Facebook] Error cargando cookies: {error}")
         return False
 
-    def waitForManualUserLogin(self, browserPage):
-        print("[Facebook] --- ESPERANDO INICIO DE SESIÓN MANUAL ---")
-        maxRetries = 300 
-        for i in range(maxRetries):
-            if self.stop_event.is_set():
-                return False
-            try:
-                # Verificamos si estamos en el feed o con sesión iniciada
-                if browserPage.query_selector('div[role="feed"]') or \
-                   browserPage.query_selector('input[placeholder*="Facebook"]'):
-                    print("[Facebook] ¡Sesión detectada!")
-                    return True
-            except Exception:
-                pass
-            time.sleep(1)
-        return False
-
     def run(self, browserPage):
         try:
             browserPage.set_default_timeout(60000)
@@ -75,20 +58,16 @@ class FacebookScraper:
                 print("!"*70 + "\n")
                 
                 input(">>> PRESIONA ENTER AQUÍ EN LA TERMINAL CUANDO YA ESTÉS LOGUEADO EN FACEBOOK...")
-                
                 print("[Facebook] Reanudando ejecución y guardando nueva sesión...")
                 self.saveSessionCookies(browserPage)
 
-            # Flujo interactivo de búsqueda desde el buscador superior de la Home
             print(f"[Facebook] Buscando tema de forma humana desde la interfaz superior...")
             try:
                 search_box_selector = 'input[placeholder*="Buscar"], input[placeholder*="Search"], input[type="search"]'
                 browserPage.wait_for_selector(search_box_selector, timeout=15000)
-                
                 browserPage.click(search_box_selector)
                 browserPage.locator(search_box_selector).fill("") 
                 
-                # Escritura humana carácter por carácter
                 for char in self.query:
                     browserPage.keyboard.type(char)
                     time.sleep(random.uniform(0.05, 0.12))
@@ -103,34 +82,29 @@ class FacebookScraper:
                 browserPage.goto(f"https://www.facebook.com/search/posts/?q={cleanQuery}")
                 self.executeRandomSleep(6, 9)
 
-            # Verificación de seguridad: esperar a que el DOM pinte el feed de resultados
             try:
                 browserPage.wait_for_selector('div[role="feed"], div[role="article"], div[data-testid="post_message"]', timeout=15000)
                 print("[Facebook] Interfaz de búsqueda detectada con éxito.")
             except Exception:
-                print("[Facebook] Advertencia: Tiempo de espera de elementos agotado. Forzando ruta cronológica posts...")
                 cleanQuery = self.query.replace('á', 'a').replace('é', 'e').replace('í', 'i').replace('ó', 'o').replace('ú', 'u')
                 browserPage.goto(f"https://www.facebook.com/search/posts/?q={cleanQuery}")
                 self.executeRandomSleep(6, 9)
 
             extractedCount = 0
             stallCounter = 0  
-            maxStallIterations = 15  # Aumentado a 15 para dar más margen de carga en conexiones lentas
-            maxIterations = 120  # Más intentos máximos para búsquedas grandes (ej: 20 posts)
+            maxStallIterations = 15  
+            maxIterations = 120  
             iteration = 0
             
             while not self.stop_event.is_set() and extractedCount < self.max_posts and iteration < maxIterations:
                 iteration += 1
                 previousCount = extractedCount
                 
-                # Múltiples scrolls intermedios pausados para asegurar que Facebook despierte el Lazy Loading
                 for _ in range(4):
                     browserPage.evaluate("window.scrollBy(0, window.innerHeight * 1.5)")
                     time.sleep(0.6)
-                
                 self.executeRandomSleep(2, 4)
 
-                # Selectores combinados para abarcar todos los formatos de publicación de Facebook
                 potentialPosts = browserPage.query_selector_all('div[role="article"]')
                 if len(potentialPosts) == 0:
                     potentialPosts = browserPage.query_selector_all('div[data-testid="post_message"]') or \
@@ -143,43 +117,83 @@ class FacebookScraper:
                         break
                     
                     try:
-                        rawText = post.inner_text().strip()
-                        if len(rawText) < 40: continue
-                        if "Se incluyen los resultados" in rawText: continue
+                        # Capturar la descripción limpia del Post
+                        msg_elem = post.query_selector('div[data-testid="post_message"]') or \
+                                   post.query_selector('div[data-ad-comet-preview="message"]') or \
+                                   post.query_selector('div[dir="auto"]')
+                        
+                        post_text = msg_elem.inner_text().strip() if msg_elem else post.inner_text().strip()
+                        if len(post_text) < 25 or "Se incluyen los resultados" in post_text: 
+                            continue
 
-                        # ID unívoco para control estricto de duplicados en el feed
-                        postId = str(hash(rawText[:150]))
+                        postId = str(hash(post_text[:150]))
+                        if postId in self.processed_posts: 
+                            continue
+                        
+                        print(f"   ↳ [Facebook] Extrayendo debates del post FB_{postId[:8]}...")
+                        
+                        # INTENTO AGRESIVO DE DESPLIEGUE: Forzar clic en los botones de interacción por texto
+                        botones_comentarios = post.query_selector_all('div[role="button"]:has-text("Comentarios"), div[role="button"]:has-text("Comments"), span:has-text("comentario")')
+                        for btn in botones_comentarios:
+                            try:
+                                btn.click()
+                                browserPage.wait_for_timeout(2000)
+                            except: pass
+                        
+                        # Scroll local simulado sobre la tarjeta del post
+                        post.scroll_into_view_if_needed()
+                        browserPage.wait_for_timeout(1000)
 
-                        if postId not in self.processed_posts:
-                            dataPayload = {
-                                'RedSocial': 'Facebook',
-                                'IDP': self.process_id,
-                                'Request': self.query,
-                                'FechaPeticion': self.request_date,
-                                'FechaPublicacion': datetime.now().strftime("%Y-%m-%d"),
-                                'idPublicacion': f"FB_{postId[:8]}",
-                                'Data': rawText.replace('\n', ' ').replace('|', '-')[:2200]
-                            }
-                            
-                            self.result_queue.put(dataPayload)
-                            self.processed_posts.add(postId)
-                            extractedCount += 1
-                            print(f"[Facebook] ✓ ¡ÉXITO! Post {extractedCount}/{self.max_posts} extraído: FB_{postId[:8]}")
-                            self.executeRandomSleep(0.5, 1.2)
+                        # SELECTOR SEMÁNTICO INMUNE A CAMBIOS: Extrae texto dentro de los bloques estructurados de comentario
+                        comment_elements = post.query_selector_all('div[dir="auto"] div[dir="auto"]'), post.query_selector_all('div[role="comment"] span')
+                        # Combinamos los dos enfoques de búsqueda de nodos de texto
+                        nodes = post.query_selector_all('div[role="comment"]') or post.query_selector_all('span[dir="auto"]')
+                        
+                        list_comments = []
+                        for node in nodes:
+                            try:
+                                c_text = node.inner_text().strip()
+                                # Filtrar metadatos y la UI del post
+                                if c_text and 8 < len(c_text) < 500 and c_text not in post_text and "Me gusta" not in c_text and "Responder" not in c_text and "Compartir" not in c_text:
+                                    list_comments.append(c_text.replace('|', '-').replace('\n', ' '))
+                            except: continue
+
+                        list_comments = list(dict.fromkeys(list_comments))[:10]
+                        print(f"   ↳ [Facebook] Encontrados {len(list_comments)} comentarios reales.")
+
+                        # Formatear usando el delimitador lógico Pipe ('|')
+                        final_data_payload = post_text.replace('\n', ' ').replace('|', '-')
+                        if list_comments:
+                            final_data_payload += " | " + " | ".join(list_comments)
+
+                        dataPayload = {
+                            'RedSocial': 'Facebook',
+                            'IDP': self.process_id,
+                            'Request': self.query,
+                            'FechaPeticion': self.request_date,
+                            'FechaPublicacion': datetime.now().strftime("%Y-%m-%d"),
+                            'idPublicacion': f"FB_{postId[:8]}",
+                            'Data': final_data_payload[:4500]
+                        }
+                        
+                        self.result_queue.put(dataPayload)
+                        self.processed_posts.add(postId)
+                        extractedCount += 1
+                        print(f"[Facebook] ✓ ¡PROCESADO! Post + Comentarios {extractedCount}/{self.max_posts}: FB_{postId[:8]}")
+                        self.executeRandomSleep(1.0, 2.0)
                         
                     except Exception:
                         continue
                 
-                # Manejo inteligente del estancamiento: Solo se rinde si realmente no hay más contenido en la plataforma
                 if extractedCount == previousCount:
                     stallCounter += 1
                     if stallCounter >= maxStallIterations:
-                        print(f"[Facebook] Deteniendo: El feed no cargó contenido nuevo tras {maxStallIterations} scrolls profundos.")
+                        print(f"[Facebook] Deteniendo: El feed no cargó contenido nuevo tras {maxStallIterations} scrolls.")
                         break
                 else:
                     stallCounter = 0  
                     
-            print(f"[Facebook] Finalizado: {extractedCount} posts extraídos de forma limpia.")
+            print(f"[Facebook] Finalizado: {extractedCount} publicaciones guardadas en la cola.")
                         
         except Exception as error:
             print(f"[Facebook] Error crítico en ejecución: {error}")

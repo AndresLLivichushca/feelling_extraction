@@ -8,16 +8,16 @@ from typing import List, Dict
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# --- CONFIGURACIÓN ---
+# --- CONFIGURACIÓN OPENAI ---
 load_dotenv(os.path.join(os.getcwd(), '.env'))
 api_key = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(api_key=api_key) if api_key else None
-MODELO = "gpt-4o-mini" 
-ARCHIVO_RESULTADOS_JSON = "analisis_instagram_completo.json"
-ARCHIVO_REPORTE = "reporte_instagram_openai.txt" 
+MODELO = "gpt-4o-mini"
+ARCHIVO_RESULTADOS_JSON = "analisis_threads_completo.json"
+ARCHIVO_REPORTE = "reporte_threads.txt"
 
-MAX_CONCURRENT_TASKS = 10 
+MAX_CONCURRENT_TASKS = 10
 SEMAPHORE = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 
 tiempos_procesamiento = []
@@ -28,19 +28,11 @@ def clean_text(text: str) -> str:
     if not isinstance(text, str): return ""
     return " ".join(text.split())[:1500]
 
-def parse_instagram_data(data_str: str) -> Dict[str, List[str]]:
-    if not isinstance(data_str, str):
-        return {'post': '', 'comentarios': []}
+def parse_threads_data(data_str: str) -> Dict[str, List[str]]:
+    if not isinstance(data_str, str): return {'post': '', 'comentarios': []}
     partes = [p.strip() for p in data_str.split('|') if p.strip()]
-    if not partes:
-        return {'post': '', 'comentarios': []}
-    
-    post = partes[0]
-    comentarios = partes[1:] if len(partes) > 1 else []
-    return {
-        'post': clean_text(post),
-        'comentarios': [clean_text(c) for c in comentarios]
-    }
+    if not partes: return {'post': '', 'comentarios': []}
+    return {'post': clean_text(partes[0]), 'comentarios': [clean_text(c) for c in partes[1:]]}
 
 # Listas de palabras clave para el análisis léxico de respaldo (Fallback)
 PALABRAS_POS = {'bueno', 'excelente', 'increible', 'gracias', 'me gusta', 'genial', 'facil', 'top', 'util', 'mejor', 'recomiendo', 'buen', 'crack', 'ja', 'xd', 'pro', 'bien', 'buena', 'interesante', 'productivo', 'brutal', 'hermoso', 'amor', 'feliz', 'éxito', 'super', 'apoyo', 'ajaja', 'jaja', 'jajaja', '❤️', '🔥', '👏', '🚀', '🙌', '😍'}
@@ -134,31 +126,26 @@ Responde exclusivamente con un objeto JSON estricto:
         'tiempo_api': round(time.time() - inicio_api, 3)
     }
 
-async def procesar_publicacion_instagram(publicacion_data: Dict) -> Dict:
-    inicio_procesamiento = time.time()
-    id_publicacion = publicacion_data['idPublicacion']
-    red_social = publicacion_data['red_origen']
-    query_req = publicacion_data['query_utilizada']
-    raw_data_original = publicacion_data['texto_original']
-    
-    post = publicacion_data['post']
-    comentarios = publicacion_data['comentarios']
+async def procesar_publicacion_threads(video_data: Dict) -> Dict:
+    inicio_proc = time.time()
+    id_publicacion = video_data['idPublicacion']
+    post = video_data['post']
+    comentarios = video_data['comentarios']
     
     tareas = []
     if post: tareas.append(analizar_sentimiento_openai_async(post, "post"))
-    for i, comentario in enumerate(comentarios):
-        if comentario: tareas.append(analizar_sentimiento_openai_async(comentario, f"comentario_{i+1}"))
-    
+    for i, c in enumerate(comentarios):
+        if c: tareas.append(analizar_sentimiento_openai_async(c, f"comentario_{i+1}"))
+        
     resultados = await asyncio.gather(*tareas, return_exceptions=True)
-    
     analisis_post = None
     analisis_comentarios = []
     
-    for resultado in resultados:
-        if isinstance(resultado, Exception): continue
-        if resultado.get('tipo') == 'post': analisis_post = resultado
-        elif resultado.get('tipo', '').startswith('comentario'): analisis_comentarios.append(resultado)
-    
+    for r in resultados:
+        if isinstance(r, Exception): continue
+        if r.get('tipo') == 'post': analisis_post = r
+        elif r.get('tipo', '').startswith('comentario'): analisis_comentarios.append(r)
+        
     sentimientos = [analisis_post['sentimiento']] if analisis_post else []
     sentimientos.extend([c['sentimiento'] for c in analisis_comentarios])
     
@@ -169,15 +156,15 @@ async def procesar_publicacion_instagram(publicacion_data: Dict) -> Dict:
         if positivos > negativos: sentimiento_general = 'Positivo'
         elif negativos > positivos: sentimiento_general = 'Negativo'
         else: sentimiento_general = 'Neutral'
-    
-    tiempo_total = time.time() - inicio_procesamiento
+        
+    tiempo_total = time.time() - inicio_proc
     tiempos_procesamiento.append(tiempo_total)
     
     return {
         'idPublicacion': str(id_publicacion),
-        'red_origen': red_social,
-        'query_utilizada': query_req,
-        'texto_original': raw_data_original,
+        'red_origen': 'Threads',
+        'query_utilizada': video_data['query_utilizada'],
+        'texto_original': video_data['texto_original'],
         'sentimiento_general': sentimiento_general,
         'analisis_post': analisis_post,
         'analisis_comentarios': analisis_comentarios,
@@ -187,115 +174,100 @@ async def procesar_publicacion_instagram(publicacion_data: Dict) -> Dict:
         'fecha_analisis': datetime.now().isoformat()
     }
 
-async def procesar_instagram_concurrente(csv_file: str = "resultados.csv") -> List[Dict]:
+async def procesar_threads_concurrente(csv_file: str = "resultados.csv") -> List[Dict]:
     if not os.path.exists(csv_file): return []
     try: df = pd.read_csv(csv_file, encoding='utf-8')
     except: df = pd.read_csv(csv_file, encoding='latin1')
     
     df['RedSocial'] = df['RedSocial'].astype(str)
-    df_instagram = df[df['RedSocial'].str.lower() == 'instagram'].copy()
-    if df_instagram.empty: return []
+    df_th = df[df['RedSocial'].str.lower() == 'threads'].copy()
+    if df_th.empty: return []
     
-    publicaciones = []
-    for _, row in df_instagram.iterrows():
+    threads_posts = []
+    for _, row in df_th.iterrows():
         raw_data = str(row.get('Data', ''))
-        data_parsed = parse_instagram_data(raw_data)
-        if data_parsed['post'] or data_parsed['comentarios']:
-            publicaciones.append({
+        parsed = parse_threads_data(raw_data)
+        if parsed['post'] or parsed['comentarios']:
+            threads_posts.append({
                 'idPublicacion': row['idPublicacion'],
-                'red_origen': 'Instagram',
                 'query_utilizada': str(row.get('Request', 'unknown')),
                 'texto_original': raw_data,
-                'post': data_parsed['post'],
-                'comentarios': data_parsed['comentarios']
+                'post': parsed['post'],
+                'comentarios': parsed['comentarios']
             })
-    
-    if not publicaciones: return []
-    
+            
+    if not threads_posts: return []
+
     global tiempo_total_wallclock
     inicio_total = time.time()
-    resultados = await asyncio.gather(*[procesar_publicacion_instagram(pub) for pub in publicaciones], return_exceptions=True)
+    resultados = await asyncio.gather(*[procesar_publicacion_threads(t) for t in threads_posts], return_exceptions=True)
     tiempo_total_wallclock = time.time() - inicio_total
     return [r for r in resultados if not isinstance(r, Exception)]
 
 def generar_reporte(resultados: List[Dict]) -> str:
     total_publicaciones = len(resultados)
-    total_posts = 0
-    total_comentarios_analizados = 0
     todos_los_sentimientos = []
-    
-    for resultado in resultados:
-        if resultado.get('analisis_post'):
+    total_posts, total_comentarios = 0, 0
+    for r in resultados:
+        if r.get('analisis_post'):
             total_posts += 1
-            todos_los_sentimientos.append(resultado['analisis_post']['sentimiento'])
-        for comentario in resultado.get('analisis_comentarios', []):
-            total_comentarios_analizados += 1
-            todos_los_sentimientos.append(comentario['sentimiento'])
-    
+            todos_los_sentimientos.append(r['analisis_post']['sentimiento'])
+        for c in r.get('analisis_comentarios', []):
+            total_comentarios += 1
+            todos_los_sentimientos.append(c['sentimiento'])
+            
     total_elementos = len(todos_los_sentimientos)
     stats = {
-        'Positivo': todos_los_sentimientos.count('Positivo'),
-        'Negativo': todos_los_sentimientos.count('Negativo'),
+        'Positivo': todos_los_sentimientos.count('Positivo'), 
+        'Negativo': todos_los_sentimientos.count('Negativo'), 
         'Neutral': todos_los_sentimientos.count('Neutral')
     }
     
-    porcentajes = {k: round((v/total_elementos)*100, 2) if total_elementos > 0 else 0 for k, v in stats.items()}
-    tiempo_total_proc = float(tiempo_total_wallclock or 0.0)
-    tiempo_promedio = (tiempo_total_proc / total_publicaciones) if total_publicaciones else 0.0
-    tiempo_api_total = sum(tiempos_api)
+    def pct(k): return round((stats[k]/total_elementos)*100, 2) if total_elementos > 0 else 0.0
     
-    reporte = f"""
+    return f"""
         ======================================================================
-        REPORTE DE ANÁLISIS DE SENTIMIENTOS - INSTAGRAM (OpenAI Engine)
+        REPORTE DE ANÁLISIS DE SENTIMIENTOS - THREADS (OpenAI Engine)
         ======================================================================
         Fecha de Análisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-        Modelo Utilizado: {MODELO}
-        Modo de Procesamiento: Concurrente (máx {MAX_CONCURRENT_TASKS} tareas)
-
+        Modelo: {MODELO}
         ======================================================================
-        📊 ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
+        📊 ESTADÍSTICAS DEL DEBATE RECOLECTADO
         ======================================================================
-        Total de Publicaciones (Filas CSV): {total_publicaciones}
-        Total de Títulos/Captions Analizados: {total_posts}
-        Total de Comentarios Analizados: {total_comentarios_analizados}
+        Total Hilos Procesados: {total_publicaciones}
+        Total Publicaciones de Autores: {total_posts}
+        Total Respuestas/Comentarios: {total_comentarios}
         ──────────────────────────────────────────────────────────────
         TOTAL DE ELEMENTOS ANALIZADOS: {total_elementos} (Posts + Comentarios)
-
         ======================================================================
-        📊 DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
+        📊 DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Forzado Antisesgo)
         ======================================================================
-        • Positivo: {stats['Positivo']} ({porcentajes['Positivo']}%)
-        • Negativo: {stats['Negativo']} ({porcentajes['Negativo']}%)
-        • Neutral:  {stats['Neutral']} ({porcentajes['Neutral']}%)
-
+        • Positivo: {stats["Positivo"]} ({pct("Positivo")}%)
+        • Negativo: {stats["Negativo"]} ({pct("Negativo")}%)
+        • Neutral:  {stats["Neutral"]} ({pct("Neutral")}%)
         ======================================================================
-        ⚡ MÉTRICAS DE RENDIMIENTO CONCURRENTE
+        ⚡ RENDIMIENTO COMPUTACIONAL ASÍNCRONO
         ======================================================================
-        Tiempo Total de Procesamiento (Wallclock): {tiempo_total_proc:.4f} segundos
-        Tiempo Promedio por Publicación: {tiempo_promedio:.4f} segundos
-        Tiempo Combinado en Llamadas API: {tiempo_api_total:.4f} segundos
-        Total de Peticiones API Exitosas: {len(tiempos_api)}
+        Tiempo Total Asíncrono (Wallclock): {tiempo_total_wallclock:.4f}s
+        Total de Llamadas Concurrentes a la API: {len(tiempos_api)}
         ======================================================================
-        ✅ Juego de Datos Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
+        ✅ JSON Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
         ======================================================================
         """
-    return reporte
 
-def start_instagram_analysis(csv_file: str = "resultados.csv") -> str:
+def start_threads_analysis(csv_file: str = "resultados.csv") -> str:
     global tiempos_procesamiento, tiempos_api, tiempo_total_wallclock
     tiempos_procesamiento, tiempos_api = [], []
     tiempo_total_wallclock = 0.0
     try:
-        resultados = asyncio.run(procesar_instagram_concurrente(csv_file))
-        if not resultados: return "No se procesaron publicaciones de Instagram."
+        resultados = asyncio.run(procesar_threads_concurrente(csv_file))
+        if not resultados: return "No se encontraron datos de Threads."
         with open(ARCHIVO_RESULTADOS_JSON, 'w', encoding='utf-8') as f:
             json.dump(resultados, f, ensure_ascii=False, indent=2)
         reporte = generar_reporte(resultados)
-        with open(ARCHIVO_REPORTE, 'w', encoding='utf-8') as f:
-            f.write(reporte)
+        with open(ARCHIVO_REPORTE, 'w', encoding='utf-8') as f: f.write(reporte)
         return reporte
-    except Exception as e:
-        return f"Error crítico: {str(e)}"
+    except Exception as e: return f"Error: {str(e)}"
 
 if __name__ == "__main__":
-    print(start_instagram_analysis())
+    print(start_threads_analysis())

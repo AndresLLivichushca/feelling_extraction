@@ -7,3 +7,7 @@ instagram_cookies.json
 facebook_cookies.json
 *.json
 *.html
+analisis_*.json
+reporte_*.txt
+reporte_*.md
+.venv/

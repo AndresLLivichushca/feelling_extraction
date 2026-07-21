@@ -1,36 +1,35 @@
 
         ======================================================================
-        REPORTE DE ANÁLISIS DE SENTIMIENTOS - INSTAGRAM (Gemini Mapped Engine)
+        REPORTE DE ANÁLISIS DE SENTIMIENTOS - INSTAGRAM (OpenAI Engine)
         ======================================================================
-        Fecha de Análisis: 2026-07-14 20:13:57
-        Modelo Utilizado: gemini-2.5-flash
+        Fecha de Análisis: 2026-07-21 00:05:58
+        Modelo Utilizado: gpt-4o-mini
         Modo de Procesamiento: Concurrente (máx 10 tareas)
 
         ======================================================================
         📊 ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
         ======================================================================
-        Total de Publicaciones (Filas CSV): 50
-        Total de Posts Analizados: 50
-        Total de Comentarios Analizados: 0
+        Total de Publicaciones (Filas CSV): 5
+        Total de Títulos/Captions Analizados: 5
+        Total de Comentarios Analizados: 50
         ──────────────────────────────────────────────────────────────
-        TOTAL DE ELEMENTOS ANALIZADOS: 50
-        (Posts + Comentarios)
+        TOTAL DE ELEMENTOS ANALIZADOS: 55 (Posts + Comentarios)
 
         ======================================================================
-        📊 DISTRIBUCIÓN DE SENTIMIENTOS
+        📊 DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
         ======================================================================
-        • Positivo: 0 (0.0%)
-        • Negativo: 0 (0.0%)
-        • Neutral:  50 (100.0%)
+        • Positivo: 1 (1.82%)
+        • Negativo: 7 (12.73%)
+        • Neutral:  47 (85.45%)
 
         ======================================================================
-        ⚡ MÉTRICAS DE RENDIMIENTO
+        ⚡ MÉTRICAS DE RENDIMIENTO CONCURRENTE
         ======================================================================
-        Tiempo Total de Procesamiento: 3.2394 segundos
-        Tiempo Promedio por Publicación: 0.0648 segundos
-        Tiempo Total en Llamadas API: 18.8543 segundos
-        Total de Llamadas API: 9
+        Tiempo Total de Procesamiento (Wallclock): 2.8267 segundos
+        Tiempo Promedio por Publicación: 0.5653 segundos
+        Tiempo Combinado en Llamadas API: 0.0000 segundos
+        Total de Peticiones API Exitosas: 0
         ======================================================================
-        ✅ Resultados completos con Trazabilidad: analisis_instagram_completo.json
+        ✅ Juego de Datos Estructurado Guardado: analisis_instagram_completo.json
         ======================================================================
         
