@@ -245,20 +245,36 @@ if modulo_activo == "⚙️ Panel de Inyección (Scraping)":
     
     c1, c2 = st.columns(2)
     if c1.button("Lanzar Motores Paralelos Playwright", type="primary", use_container_width=True):
-        if not query_sub.strip(): st.error("Ingresa una consulta válida.")
+        if not query_sub.strip():
+            st.error("Ingresa una consulta válida.")
         else:
-            stop_event = Event()
-            res_q = Queue()
-            p_writer = Process(target=csv_writer_process, args=(res_q, stop_event))
-            p_writer.start()
-            st.session_state.running_processes.append(p_writer)
-            
-            redes_seleccionadas = ["Instagram", "Threads", "YouTube", "Reddit"]
-            for i, net in enumerate(redes_seleccionadas):
-                p = Process(target=run_scraper, args=(net, query_sub, max_p, res_q, stop_event, i))
-                p.start()
-                st.session_state.running_processes.append(p)
-            st.success("Motores asíncronos distribuidos en paralelo.")
+            with st.spinner("⏳ Ejecutando navegación asistida Playwright en background (Headless Chromium)..."):
+                stop_event = Event()
+                res_q = Queue()
+                
+                # 1. Iniciar el proceso de escritura en CSV
+                p_writer = Process(target=csv_writer_process, args=(res_q, stop_event))
+                p_writer.start()
+                st.session_state.running_processes.append(p_writer)
+                
+                # 2. Iniciar los 4 scrapers en paralelo
+                procesos_scrapers = []
+                redes_seleccionadas = ["Instagram", "Threads", "YouTube", "Reddit"]
+                for i, net in enumerate(redes_seleccionadas):
+                    p = Process(target=run_scraper, args=(net, query_sub, max_p, res_q, stop_event, i))
+                    p.start()
+                    procesos_scrapers.append(p)
+                    st.session_state.running_processes.append(p)
+                
+                # 3. Esperar a que los 4 scrapers terminen la extracción
+                for p in procesos_scrapers:
+                    p.join()
+                
+                # 4. Detener el escritor de CSV una vez finalizados los scrapers
+                stop_event.set()
+                p_writer.join()
+
+            st.success("Extracción finalizada con éxito. Los datos están listos en el Explorador de Datos.")
             
     if c2.button("Lanzar Clasificación Sintáctica de Sentimientos (AI)", use_container_width=True):
         if not os.path.exists("resultados.csv"): st.error("No hay archivo base resultados.csv.")
