@@ -253,31 +253,42 @@ if modulo_activo == "⚙️ Panel de Inyección (Scraping)":
             stop_event = Event()
             res_q = Queue()
             
-            # Iniciar el proceso de escritura en CSV
+            # 1. Proceso dedicado a la escritura asíncrona en el CSV
             p_writer = Process(target=csv_writer_process, args=(res_q, stop_event))
             p_writer.start()
+            st.session_state.running_processes.append(p_writer)
             
-            redes_seleccionadas = ["YouTube", "Reddit", "Threads", "Instagram"]
+            # 2. Worker Pool asignado con un semáforo de máximo 2 trabajadores concurrentes
+            # Esto previene el desbordamiento de RAM (OOM) en servidores de 512 MB como Render
+            MAX_CONCURRENT_SCRAPERS = 2
+            semaforo_pool = mp.Semaphore(MAX_CONCURRENT_SCRAPERS)
             
-            # Ejecución secuencial para no sobrepasar los 512 MB de RAM en Render
-            for i, net in enumerate(redes_seleccionadas):
-                status_container.info(f"⏳ Cosechando datos de **{net}** (1 instancia de Chromium)...")
-                
-                # Crear y ejecutar el proceso para la red actual
-                p = Process(target=run_scraper, args=(net, query_sub, max_p, res_q, stop_event, i))
-                p.start()
-                p.join(timeout=120) # Timeout de seguridad de 2 minutos por red
-                
-                if p.is_alive():
-                    p.terminate()
-            
-            # Finalizar la escritura en el CSV
-            stop_event.set()
-            p_writer.join(timeout=10)
-            if p_writer.is_alive():
-                p_writer.terminate()
+            def worker_task(network, query, max_posts, queue_res, stop_evt, proc_id, sema):
+                with sema: # Adquiere un slot del pool concurrente
+                    run_scraper(network, query, max_posts, queue_res, stop_evt, proc_id)
 
-            status_container.success("Extracción finalizada. Los datos están listos en el Explorador de Datos.")
+            redes_seleccionadas = ["Instagram", "Threads", "YouTube", "Reddit"]
+            procesos_scrapers = []
+            
+            with st.spinner("⚡ Ejecutando Worker Pool concurrente (2 navegadores en paralelo)..."):
+                for i, net in enumerate(redes_seleccionadas):
+                    p = Process(
+                        target=worker_task, 
+                        args=(net, query_sub, max_p, res_q, stop_event, i, semaforo_pool)
+                    )
+                    p.start()
+                    procesos_scrapers.append(p)
+                    st.session_state.running_processes.append(p)
+                
+                # Sincronización: esperar a que los 4 trabajadores del pool completen la tarea
+                for p in procesos_scrapers:
+                    p.join(timeout=180) # Timeout de seguridad por proceso
+                
+                # Detener el escritor del buffer CSV
+                stop_event.set()
+                p_writer.join(timeout=10)
+
+            status_container.success("✅ Cosecha de datos finalizada mediante Worker Pool Concurrente. Explora los registros en el menú.")
             
     if c2.button("Lanzar Clasificación Sintáctica de Sentimientos (AI)", use_container_width=True):
         if not os.path.exists("resultados.csv"): st.error("No hay archivo base resultados.csv.")
