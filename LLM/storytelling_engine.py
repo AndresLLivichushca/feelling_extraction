@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv(os.path.join(os.getcwd(), '.env'))
 
 def generar_storytelling_global() -> str:
-    """Lee todos los reportes de las redes y genera un informe ejecutivo narrativo continuo"""
+    """Lee todos los reportes de las redes (Threads, Instagram, YouTube, Reddit) y genera un informe ejecutivo narrativo continuo"""
     api_key = os.getenv("OPENAI_API_KEY_STORYTELLING")
     if not api_key:
         return "⚠️ Error: OPENAI_API_KEY_STORYTELLING no configurada en el entorno."
@@ -14,8 +14,9 @@ def generar_storytelling_global() -> str:
     client = OpenAI(api_key=api_key)
     
     # Recopilar la información de los reportes existentes para pasarla como contexto
+    # Reemplazado Facebook por Threads
     archivos = {
-        "Facebook": "reporte_facebook_openai.txt",
+        "Threads": "reporte_threads.txt",       # O "reporte_threads_openai.txt" según tu nombrado
         "Instagram": "reporte_instagram_openai.txt",
         "YouTube": "reporte_youtube.txt",
         "Reddit": "reporte_reddit.txt"
@@ -36,13 +37,13 @@ def generar_storytelling_global() -> str:
     {contexto_reportes}
     
     Basándote en esos datos cuantitativos reales, genera un 'Informe Narrativo AI' continuo y formal.
-    Usa un lenguaje corporativo, analítico y elegante. Estructura la respuesta usando estrictamente los siguientes tres puntos:
+    Usa un lenguaje corporativo, analítico y elegante. Estructura la respuesta usando strictly los siguientes tres puntos:
 
     1. Resumen Global: Un Paisaje de Opinión Predominante
     (Redacta un párrafo analítico que describa la tendencia general del ecosistema, mencionando porcentajes consolidados globales y qué significa esta percepción pública).
 
     2. Análisis Comparativo por Plataforma: Audiencias y Dinámicas
-    (Analiza cómo se comportó cada red social. Contrasta por qué una red es más positiva o negativa que otra según los datos, y cómo influye la maquetación de cada comunidad).
+    (Analiza cómo se comportó cada red social: Threads, Instagram, YouTube y Reddit. Contrasta por qué una red es más positiva o negativa que otra según los datos, y cómo influye la maquetación de cada comunidad).
 
     3. Insights Cualitativos y Conclusiones Estratégicas
     (Brinda conclusiones de alto nivel basados en el volumen total analizado y qué acciones o patrones de fricción se detectaron en los debates).
