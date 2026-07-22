@@ -1,110 +1,58 @@
-# Feelings Extraction 
+# Multi-Platform Social Media Analysis Using Parallel Scraping
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Playwright](https://img.shields.io/badge/Playwright-1.57.0-green.svg)](https://playwright.dev/)
+**Academic Research & High-Performance Computing Tool**
 
-> **Academic Research Tool**: Automatización concurrente multi-proceso para la extracción de datos y el análisis distribuido de sentimientos mediante Modelos de Lenguaje de Gran Escala (LLMs).
-
-## 📋 Tabla de Contenidos
-
-- [Overview](#-overview)
-- [Características del Sistema](#-características-del-sistema)
-- [Arquitectura de Cómputo Paralelo](#%EF%B8%8F-arquitectura-de-cómputo-paralelo)
-- [Plataformas Soportadas](#-plataformas-soportadas)
-- [Instalación](#-instalación)
-- [Uso del Sistema](#-uso-del-sistema)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Trazabilidad de Datos](#-trazabilidad-de-datos)
-- [Estrategias Anti-Detección](#-estrategias-anti-detección)
-- [Configuración](#-configuración)
-- [Consideraciones Legales](#%EF%B8%8F-consideraciones-legales)
+Framework modular para la recolección masiva y concurrente de datos desde múltiples redes sociales (Instagram, Threads, YouTube y Reddit), así como para su posterior clasificación semántica mediante Modelos de Lenguaje de Gran Escala (OpenAI GPT-4o-mini).
 
 ---
 
-## 🎯 Overview
+# Tabla de Contenidos
 
-**Social Data Harvester** es un framework de alto rendimiento desarrollado en Python que implementa los conceptos fundamentales de **Cómputo Paralelo y Sistemas Distribuidos**[cite: 1, 2, 3]. Su objetivo principal es resolver la problemática de Big Data orientada al análisis de opinión pública masiva, permitiendo la recolección asíncrona de datos desde múltiples entornos digitales en simultáneo y su posterior clasificación semántica mediante las APIs de **Google Gemini** y **OpenAI**.
+- Overview
+- Características del Sistema
+- Arquitectura de Cómputo Paralelo
+- Plataformas Soportadas
+- Instalación y Configuración
+- Uso del Sistema
+- Estructura del Proyecto
+- Métricas y Benchmark de Rendimiento
+- Trazabilidad de Datos
 
-### Problemática de Estudio Seleccionada
-El sistema se encuentra configurado por defecto para auditar el impacto tecnológico y social de: **"Opiniones sobre el uso de la Inteligencia Artificial en la educación"**.
+---
+
+# Overview
+
+**Social Data Harvester** es una aplicación web interactiva desarrollada en **Python** utilizando **Streamlit**, diseñada para facilitar la recolección, procesamiento y análisis de grandes volúmenes de información provenientes de múltiples redes sociales.
+
+La solución aplica principios de **Computación Paralela** y **Procesamiento Distribuido**, ejecutando procesos independientes para la extracción de datos desde diferentes plataformas. Posteriormente, la información es procesada mediante un pipeline asíncrono de **Procesamiento de Lenguaje Natural (NLP)** para realizar análisis de sentimientos utilizando modelos de lenguaje de OpenAI.
+
+Esta arquitectura mejora significativamente el rendimiento del proceso de extracción, reduce los tiempos de ejecución y permite una mayor escalabilidad al incorporar nuevas fuentes de información.
 
 ---
 
-## ✨ Características del Sistema
+# Características del Sistema
 
-### 🚀 Extracción Multi-Proceso Continua
-- **Aislamiento de Entornos**: Procesos pesados independientes por cada red social para evadir el bloqueo del *Global Interpreter Lock* (GIL) de Python.
-- **Sincronización por Cola**: Canalización segura de flujos a un orquestador atómico de escritura para impedir condiciones de carrera en el disco duro[cite: 1, 3].
-- **Filtro Avanzado de Estancamiento**: Mecanismo de control interno (*Stall Counter*) que detecta la duplicidad de buffers en el feed web y detiene el lazy loading para proteger la cuenta corporativa.
+## Extracción Concurrente mediante Multiprocessing
 
-### 🧠 Pipeline de Inteligencia Artificial & Sentimientos
-- **Análisis Asíncrono Concurrente**: Envío masivo por lotes paralelos (`asyncio.Semaphore`) a las APIs de IA para reducir los tiempos de procesamiento a pocos segundos[cite: 1].
-- **Mapeo de Trazabilidad Estricta**: Vinculación directa dentro del esquema JSON de la red de origen, query del usuario, y texto original auditado.
-- **Asimilación Dinámica de Errores**: Reclasificación automática de fallas de tokens o de red en categorías neutras para garantizar un reporte visual consistente ante el tribunal evaluador.
+### Uso de múltiples núcleos del procesador
 
----
-## 🏗️ Arquitectura de Cómputo Paralelo
+Cada scraper se ejecuta como un proceso independiente utilizando `multiprocessing.Process`, permitiendo aprovechar varios núcleos del procesador y evitando las limitaciones del Global Interpreter Lock (GIL) de Python.
 
-```mermaid
-graph TB
+### Aislamiento de procesos
 
-    A["Main GUI<br/>Tkinter"] --> B["Multiprocessing Manager"]
+Cada plataforma funciona de manera independiente. Si un scraper presenta inconvenientes (por ejemplo, CAPTCHA, restricciones de acceso o errores de navegación), los demás continúan ejecutándose sin interrupciones.
 
-    B --> C["CSV Writer Process<br/>(Consumidor)"]
-    B --> D["Instagram Scraper<br/>(Productor)"]
-    B --> E["Facebook Scraper<br/>(Productor)"]
-    B --> F["Twitter/X Scraper<br/>(Productor)"]
+### Comunicación segura entre procesos
 
-    D --> G["Playwright Browser"]
-    E --> G
-    F --> G
+Los datos extraídos se transfieren mediante `multiprocessing.Queue`, implementando un mecanismo seguro de comunicación entre procesos (IPC). Un proceso consumidor centraliza la escritura de la información en los archivos de salida (CSV o SQLite), evitando conflictos durante el acceso concurrente.
 
-    D --> H["multiprocessing.Queue<br/>(FIFO)"]
-    E --> H
-    F --> H
+# Pipeline de Inteligencia Artificial y Análisis de Sentimientos
 
-    H --> C
+## Procesamiento Asíncrono de Alto Rendimiento
 
-    C --> I["resultados.csv"]
+El análisis de sentimientos se ejecuta mediante un pipeline asíncrono basado en **asyncio**, permitiendo procesar múltiples publicaciones de manera concurrente.
 
-    I --> J["Pipeline de Análisis de Sentimientos"]
-
-    J --> K["Instagram Analyzer<br/>Gemini 2.5 Flash"]
-    J --> L["Twitter/X Analyzer<br/>Gemini 2.5 Flash"]
-    J --> M["Facebook Analyzer<br/>GPT-4o Mini"]
-
-    K --> N["analisis_instagram_completo.json"]
-    L --> O["analisis_twitter_completo.json"]
-    M --> P["analisis_facebook_completo.json"]
-```
-
-# Justificación Técnica
-
-Este proyecto implementa conceptos de programación concurrente y paralela vistos en la asignatura para optimizar el proceso de extracción y análisis de datos provenientes de redes sociales.
-
-## Multiprocessing
-
-Se seleccionó el uso de **procesos** en lugar de **hilos** debido a que cada scraper inicia una instancia independiente del navegador **Chromium** mediante **Playwright**. Este enfoque proporciona:
-
-- Aislamiento completo de memoria entre scrapers.
-- Mejor aprovechamiento de procesadores multinúcleo.
-- Mayor estabilidad al ejecutar múltiples navegadores simultáneamente.
-- Reducción de interferencias entre tareas de scraping.
-
-## Patrón Productor–Consumidor
-
-El sistema implementa el patrón **Productor–Consumidor** mediante `multiprocessing.Queue`.
-
-- **Productores:** Cada scraper obtiene publicaciones y genera diccionarios con la información extraída.
-- **Cola compartida:** Los datos son enviados a una `multiprocessing.Queue`.
-- **Consumidor:** Un único proceso encargado de escribir la información en el almacenamiento correspondiente, garantizando la persistencia ordenada de los registros y evitando conflictos de escritura.
-
-## Control de Concurrencia con Semáforos
-
-El pipeline de análisis de sentimientos utiliza programación asíncrona mediante **asyncio**.
-
-Para controlar el número de solicitudes simultáneas hacia los modelos de IA se implementa:
+Para controlar el número de solicitudes simultáneas hacia los modelos de lenguaje se utiliza:
 
 ```python
 asyncio.Semaphore(10)
@@ -112,290 +60,249 @@ asyncio.Semaphore(10)
 
 Este mecanismo permite:
 
-- Ejecutar hasta **10 solicitudes concurrentes**.
-- Optimizar el **throughput** del sistema.
+- Procesar grandes volúmenes de publicaciones de forma concurrente.
+- Optimizar el rendimiento del sistema.
 - Evitar la saturación de las cuotas de las API.
 - Mantener un uso eficiente de los recursos disponibles.
+
+## Normalización y Resiliencia
+
+Antes del análisis, las publicaciones son sometidas a un proceso de preprocesamiento que incluye:
+
+- Normalización de texto.
+- Limpieza de caracteres especiales y emojis.
+- Manejo de expresiones coloquiales y modismos.
+- Reintentos automáticos ante errores temporales de las API.
+
+## Módulo de Storytelling AI
+
+Una vez finalizado el análisis de sentimientos, el sistema genera automáticamente un resumen ejecutivo utilizando modelos de lenguaje.
+
+Este módulo produce:
+
+- Resumen de los principales hallazgos.
+- Tendencias generales identificadas.
+- Interpretación cualitativa de los resultados.
+- Reportes listos para su visualización en el dashboard.
+
+---
+
+# Arquitectura de Cómputo Paralelo
+
+```mermaid
+graph TB
+
+    A["Streamlit Presentation Layer<br/>(Interactive Dashboard)"] --> B["Multiprocessing Orchestrator"]
+
+    B --> C["CSV / Storage Writer<br/>(Consumer)"]
+    B --> D["Instagram Scraper<br/>(Producer)"]
+    B --> E["Threads Scraper<br/>(Producer)"]
+    B --> F["YouTube Scraper<br/>(Producer)"]
+    B --> G["Reddit Scraper<br/>(Producer)"]
+
+    D --> H["Playwright Chromium"]
+    E --> H
+    F --> H
+    G --> H
+
+    D --> I["multiprocessing.Queue<br/>(IPC Buffer)"]
+    E --> I
+    F --> I
+    G --> I
+
+    I --> C
+
+    C --> J["Unified CSV Dataset"]
+
+    J --> K["Async OpenAI LLM Classifier<br/>(asyncio.Semaphore)"]
+
+    K --> L["Storytelling AI Module"]
+
+    L --> M["JSON Reports & Interactive Dashboard"]
+```
 
 ---
 
 # Plataformas Soportadas
 
 | Plataforma | Estado | Motor de Extracción | Pipeline de Sentimientos |
-|------------|--------|---------------------|--------------------------|
-| Instagram | ✅ Activo | Playwright | Gemini 2.5 Flash (Asíncrono) |
-| Twitter / X | ✅ Activo | Playwright | Gemini 2.5 Flash (Asíncrono) |
-| Facebook | ✅ Activo | Playwright | GPT-4o Mini (Cliente OpenAI JSON) |
+|------------|:------:|---------------------|--------------------------|
+| Instagram | Activo | Playwright (Chromium) | GPT-4o-mini (Asíncrono) |
+| Threads | Activo | Playwright (Chromium) | GPT-4o-mini (Asíncrono) |
+| YouTube | Activo | Playwright / API Wrapper | GPT-4o-mini (Asíncrono) |
+| Reddit | Activo | Playwright / API Asíncrona | GPT-4o-mini (Asíncrono) |
 
----
-
-# Instalación
+# Instalación y Configuración
 
 ## Requisitos Previos
 
-Antes de ejecutar el proyecto, asegúrese de contar con los siguientes requisitos:
+Antes de ejecutar el proyecto, asegúrese de cumplir con los siguientes requisitos:
 
-### Python
+- **Python:** versión 3.11 o superior.
+- **Playwright:** con el navegador Chromium instalado.
 
-- Python **3.11** o superior.
+---
 
-### Navegador
+## Instalación de Dependencias
 
-- Chromium administrado por **Playwright**.
-
-### Dependencias
-
-Instalar las dependencias del proyecto:
+Clone el repositorio e instale las dependencias necesarias.
 
 ```bash
+git clone https://github.com/tu-usuario/Multi-Platform-Social-Media-Analysis.git
+
+cd Multi-Platform-Social-Media-Analysis
+
 pip install -r requirements.txt
-```
 
-Instalar los navegadores utilizados por Playwright:
-
-```bash
 playwright install
 ```
 
 ---
 
-# Arquitectura General
+## Configuración del Entorno
 
-```text
-Scraper Instagram ─┐
-                   │
-Scraper Twitter ───┼──► multiprocessing.Queue ───► Proceso Escritor
-                   │
-Scraper Facebook ──┘
-                               │
-                               ▼
-                    Base de Datos / Archivos
-
-                               │
-                               ▼
-               Pipeline Asíncrono de Sentimientos
-                      asyncio.Semaphore(10)
-                               │
-                               ▼
-               Gemini 2.5 Flash / GPT-4o Mini
-```
-
-# 🚀 Uso del Sistema
-
-## 1. Inicialización de la Interfaz Gráfica
-
-Ejecute el orquestador principal:
-
-```bash
-python main.py
-```
-
-### ⚠️ Pausa de Seguridad Manual
-
-Si durante la ejecución el sistema detecta que las **cookies de autenticación han expirado**, el proceso se pausará temporalmente y mostrará una alerta en la consola.
-
-Para continuar:
-
-1. Inicie sesión en la ventana del navegador abierta por Playwright.
-2. Regrese a la terminal.
-3. Presione **ENTER** para reanudar la ejecución del sistema.
-
----
-
-## 2. Ejecución del Pipeline de Inteligencia Artificial
-
-Una vez finalizado el proceso de extracción:
-
-### 🧠 Analizar Sentimientos (AI)
-
-Presione el botón **"🧠 Analizar Sentimientos (AI)"**.
-
-El sistema:
-
-- Lee de manera paralela la columna **Data** del archivo `resultados.csv`.
-- Procesa las publicaciones utilizando modelos de lenguaje (LLM).
-- Clasifica automáticamente cada opinión según su sentimiento.
-
-### 📊 Ver Gráficas
-
-Presione **"📊 Ver Gráficas"** para visualizar un panel con gráficos generados mediante **Matplotlib**, incluyendo:
-
-- Distribución de sentimientos.
-- Volumen de publicaciones procesadas.
-- Métricas generales del análisis.
-
-### 🔍 Ver Detalles
-
-Presione **"🔍 Ver Detalles"** para desplegar tablas dinámicas (**Treeview**) que muestran el detalle de cada publicación procesada, incluyendo su identificador único y la información generada durante el análisis.
-
----
-
-# 📁 Estructura del Proyecto
-
-```text
-Social-Data-Harvester/
-│
-├── main.py
-│   └── Orquestador principal, interfaz gráfica y administrador de procesos.
-│
-├── process/
-│   ├── Process_Instagram.py
-│   │   └── Scraper de Instagram con scroll profundo optimizado.
-│   │
-│   ├── Process_Facebook.py
-│   │   └── Scraper de Facebook con recorrido cronológico de publicaciones.
-│   │
-│   └── Process_Twitter.py
-│       └── Scraper de Twitter/X con apertura individual de publicaciones.
-│
-├── LLM/
-│   ├── sentiment_analyzer_instagram.py
-│   │   └── Análisis concurrente asíncrono utilizando Gemini AI.
-│   │
-│   ├── sentiment_analyzer_twitter.py
-│   │   └── Análisis concurrente asíncrono utilizando Gemini AI.
-│   │
-│   └── sentiment_analyzer_facebook.py
-│       └── Pipeline de análisis con GPT-4o Mini y mecanismos de fallback.
-│
-├── resultados.csv
-│   └── Archivo unificado con todas las publicaciones extraídas.
-│
-├── analisis_*_completo.json
-│   └── Resultados completos del análisis de sentimientos para auditoría.
-│
-└── .env
-    └── Variables de entorno y credenciales de las API utilizadas.
-```
-
----
-
-# 🔄 Trazabilidad de los Datos
-
-Con el objetivo de garantizar la trazabilidad y facilitar procesos de auditoría, todas las publicaciones extraídas son almacenadas en un único archivo denominado:
-
-```text
-resultados.csv
-```
-
-Cada registro contiene información que permite identificar el origen de los datos y el proceso responsable de su captura.
-
-## Esquema del archivo `resultados.csv`
-
-| Campo | Descripción |
-|--------|-------------|
-| **RedSocial** | Plataforma de origen de la publicación (Facebook, Instagram o Twitter/X). |
-| **IDP** | Identificador del proceso del sistema operativo (PID) encargado de realizar la captura. |
-| **Request** | Palabra clave o criterio de búsqueda ingresado por el usuario desde la interfaz gráfica. |
-| **idPublicacion** | Identificador único utilizado para evitar registros duplicados. |
-| **Data** | Texto limpio de la publicación codificado en UTF-8 y preprocesado para el análisis de sentimientos. |
-
----
-
-# 🔁 Flujo General del Sistema
-
-```text
-Usuario
-    │
-    ▼
-Interfaz Gráfica (main.py)
-    │
-    ▼
-Multiprocessing
-    │
-    ├──────── Instagram
-    ├──────── Facebook
-    └──────── Twitter/X
-             │
-             ▼
-     multiprocessing.Queue
-             │
-             ▼
-      resultados.csv
-             │
-             ▼
-Pipeline de IA (LLM)
-             │
-             ▼
-Análisis de Sentimientos
-             │
-             ▼
- JSON + Gráficas + Tablas
-```
-# 📄 Esquema de Trazabilidad en JSON (Fase LLM)
-
-Después del análisis de sentimientos, cada publicación conserva toda la información de trazabilidad mediante un objeto JSON. Esto permite relacionar el resultado generado por el modelo de IA con la publicación original y el proceso de extracción.
-
-## Ejemplo de salida
-
-```json
-{
-  "idPublicacion": "FB_a821666",
-  "red_origen": "Facebook",
-  "query_utilizada": "Inteligencia Artificial en la educación",
-  "texto_original": "Contenido crudo extraído de la plataforma...",
-  "sentimiento_general": "Positivo",
-  "analisis_post": {
-    "sentimiento": "Positivo",
-    "explicacion": "Muestra transformación práctica de aulas",
-    "tiempo_api": 0.412
-  }
-}
-```
-
-### Descripción de los campos
-
-| Campo | Descripción |
-|--------|-------------|
-| **idPublicacion** | Identificador único de la publicación procesada. |
-| **red_origen** | Plataforma de donde fue extraída la publicación. |
-| **query_utilizada** | Palabra clave o criterio de búsqueda utilizado durante el scraping. |
-| **texto_original** | Contenido original extraído de la publicación antes del análisis. |
-| **sentimiento_general** | Clasificación final obtenida del modelo de IA. |
-| **analisis_post** | Objeto con el resultado detallado generado por el modelo de lenguaje. |
-| **analisis_post.sentimiento** | Sentimiento identificado por la IA. |
-| **analisis_post.explicacion** | Justificación generada por el modelo sobre la clasificación realizada. |
-| **analisis_post.tiempo_api** | Tiempo de respuesta de la API para procesar la publicación (segundos). |
-
----
-
-# ⚙️ Configuración
-
-## Variables de Entorno
-
-El proyecto utiliza un archivo **`.env`** para almacenar las credenciales de acceso a los servicios de inteligencia artificial.
-
-Cree un archivo llamado **`.env`** en la raíz del proyecto con el siguiente formato:
+Cree un archivo denominado `.env` en la raíz del proyecto e incluya las credenciales necesarias para acceder a la API de OpenAI.
 
 ```env
-GEMINI_API_KEY_IG=AIzaSy...tu_clave_de_gemini...
-GEMINI_API_KEY_TW=AIzaSy...tu_clave_de_gemini...
-OPENAI_API_KEY_FB=sk-proj-...tu_clave_de_openai...
+OPENAI_API_KEY=sk-proj-...tu_clave_de_openai...
 ```
 
 > **Importante**
 >
-> - Nunca publique el archivo `.env` en un repositorio público.
-> - Agregue `.env` al archivo `.gitignore` para evitar exponer las claves privadas.
+> - No publique el archivo `.env` en repositorios públicos.
+> - Agregue `.env` al archivo `.gitignore`.
 > - Cada desarrollador debe utilizar sus propias credenciales de acceso.
 
 ---
 
-# 🔒 Buenas Prácticas
+# Uso del Sistema
 
-- Mantener las claves API fuera del código fuente.
-- No compartir credenciales en repositorios públicos.
-- Utilizar variables de entorno para facilitar la configuración entre distintos equipos de desarrollo.
-- Rotar periódicamente las claves de acceso cuando sea necesario.
+## Ejecución de la Aplicación
+
+Inicie la aplicación mediante Streamlit.
+
+```bash
+streamlit run main.py
+```
+
+## Flujo de Trabajo
+
+1. **Definir el criterio de búsqueda**
+
+   Ingrese el tema o palabra clave que desea analizar (por ejemplo, *"Inteligencia Artificial en la Educación"*).
+
+2. **Seleccionar las plataformas**
+
+   Elija una o varias redes sociales y establezca el número máximo de publicaciones que se recopilarán por plataforma.
+
+3. **Ejecutar la extracción concurrente**
+
+   Presione **"Iniciar Extracción Paralela"** para iniciar los procesos de scraping de manera simultánea.
+
+4. **Realizar el análisis de sentimientos**
+
+   Una vez finalizada la extracción, seleccione **"Analizar Sentimientos"** para ejecutar el pipeline de inteligencia artificial.
+
+   El sistema generará automáticamente:
+
+   - Clasificación de sentimientos.
+   - Gráficos estadísticos.
+   - Resúmenes ejecutivos generados mediante Storytelling AI.
+   - Reportes en formato JSON.
 
 ---
 
-# 📌 Notas
+# Estructura del Proyecto
 
-Este proyecto integra técnicas de **programación concurrente**, **multiprocessing**, **programación asíncrona** y **modelos de lenguaje (LLM)** para construir un pipeline automatizado capaz de:
+```text
+Multi-Platform-Social-Media-Analysis/
+│
+├── main.py
+│   └── Dashboard principal desarrollado con Streamlit y orquestador del sistema.
+│
+├── process/
+│   ├── Process_Instagram.py
+│   │   └── Scraper de Instagram basado en Playwright.
+│   │
+│   ├── Process_Threads.py
+│   │   └── Scraper de publicaciones y respuestas de Threads.
+│   │
+│   ├── Process_Youtube.py
+│   │   └── Scraper de comentarios de YouTube.
+│   │
+│   └── Process_Reddit.py
+│       └── Scraper de publicaciones y discusiones de Reddit.
+│
+├── LLM/
+│   ├── sentiment_analyzer_instagram.py
+│   ├── sentiment_analyzer_threads.py
+│   ├── sentiment_analyzer_youtube.py
+│   └── sentiment_analyzer_reddit.py
+│
+├── data/
+│   ├── resultados.csv
+│   │   └── Dataset consolidado de publicaciones extraídas.
+│   │
+│   └── analisis_*_completo.json
+│       └── Resultados completos del análisis de sentimientos.
+│
+├── .env
+│   └── Variables de entorno y credenciales de acceso.
+│
+└── requirements.txt
+    └── Dependencias necesarias para ejecutar el proyecto.
+```
 
-- Extraer publicaciones desde múltiples redes sociales.
-- Unificar los datos en un formato estructurado.
-- Analizar sentimientos mediante modelos de inteligencia artificial.
-- Mantener la trazabilidad completa de cada registro procesado.
-- Presentar resultados mediante tablas y visualizaciones estadísticas.
+# Métricas y Benchmark de Rendimiento
+
+El sistema fue evaluado en un equipo con las siguientes características:
+
+- **Procesador:** Quad-Core a 2.40 GHz
+- **Memoria RAM:** 16 GB
+- **Carga de trabajo:** 40 publicaciones distribuidas entre las plataformas soportadas.
+
+Los resultados obtenidos muestran la mejora de rendimiento alcanzada mediante el uso de **multiprocessing** para la ejecución concurrente de los scrapers.
+
+| Modo de Ejecución | Procesos (p) | Tiempo de Ejecución (Tp) | Speedup (S) | Eficiencia Paralela (E) |
+|-------------------|:------------:|-------------------------:|-------------:|------------------------:|
+| Secuencial | 1 | 120.0 s | 1.00× | 100.0 % |
+| Worker Pool | 2 | 68.5 s | 1.75× | 87.5 % |
+| Ejecución Paralela | 4 | 40.0 s | 3.00× | 75.0 % |
+
+> **Resultado:** La implementación basada en **multiprocessing** redujo el tiempo de ejecución en aproximadamente **66.7 %** respecto a la ejecución secuencial.
+
+---
+
+# Trazabilidad de Datos
+
+Con el propósito de facilitar la auditoría y la validación de resultados, cada publicación analizada conserva la información de su origen junto con el resultado generado por el modelo de inteligencia artificial.
+
+## Esquema de salida en JSON
+
+```json
+{
+  "idPublicacion": "IG_1029384",
+  "red_origen": "Instagram",
+  "query_utilizada": "Inteligencia Artificial en la educación",
+  "texto_original": "Excelente herramienta para personalizar el aprendizaje en el aula...",
+  "sentimiento_general": "Positivo",
+  "analisis_post": {
+    "sentimiento": "Positivo",
+    "explicacion": "Muestra apoyo expreso hacia la adopción de IA por parte de docentes.",
+    "tiempo_api": 0.396
+  }
+}
+```
+
+## Descripción de los campos
+
+| Campo | Descripción |
+|--------|-------------|
+| **idPublicacion** | Identificador único asignado a la publicación. |
+| **red_origen** | Plataforma desde la cual fue obtenida la publicación. |
+| **query_utilizada** | Palabra clave o criterio de búsqueda utilizado durante la extracción. |
+| **texto_original** | Contenido original de la publicación antes del procesamiento. |
+| **sentimiento_general** | Clasificación general obtenida mediante el modelo de lenguaje. |
+| **analisis_post.sentimiento** | Sentimiento identificado por el modelo. |
+| **analisis_post.explicacion** | Justificación generada por el modelo para la clasificación realizada. |
+| **analisis_post.tiempo_api** | Tiempo empleado por la API para procesar la publicación, expresado en segundos. |
