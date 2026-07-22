@@ -19,7 +19,6 @@ IS_PRODUCTION = os.getenv("RENDER") is not None or os.getenv("DOCKER_CONTAINER")
 # -------------------------------------------------------------
 st.set_page_config(page_title="Extracción de Sentimientos", layout="wide")
 
-# Inicialización inmediata y global en cabecera para evitar AttributeError en renderizado dinámico
 if "running_processes" not in st.session_state: 
     st.session_state.running_processes = []
 if "log_messages" not in st.session_state: 
@@ -160,7 +159,6 @@ def parse_report_times(filepath, nombre_red):
 # -------------------------------------------------------------
 st.markdown("""
     <style>
-        /* Ajustes globales de espaciado y fuentes */
         h1 { font-size: 42px !important; font-weight: 800 !important; letter-spacing: -1px; margin-bottom: 5px !important; }
         h2 { font-size: 32px !important; font-weight: 700 !important; margin-bottom: 15px !important; }
         h3 { font-size: 24px !important; font-weight: 600 !important; margin-bottom: 12px !important; }
@@ -170,7 +168,6 @@ st.markdown("""
         div[data-testid="stTextInput"] input { height: 3.2rem !important; font-size: 18px !important; }
         div[data-testid="stNumberInput"] input { height: 3.2rem !important; font-size: 18px !important; }
 
-        /* REESTRUCTURACIÓN DEL MENÚ DE NAVEGACIÓN EN SIDEBAR */
         div[data-testid="stSidebarUserContent"] div[role="radiogroup"] label[data-testid="stWidgetLabel"] { display: none !important; }
         div[data-testid="stSidebarUserContent"] div[role="radiogroup"] { gap: 22px !important; }
         div[data-testid="stSidebarUserContent"] div[role="radiogroup"] label {
@@ -191,7 +188,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Encabezados de Marca de la barra lateral
 st.sidebar.markdown('<p style="font-size:30px; font-weight:bold; color:#ffffff; margin-bottom:0px; letter-spacing:-1px;">⚡ Extracción de Sentimientos</p>', unsafe_allow_html=True)
 st.sidebar.markdown('<p style="font-size:11px; color:#5f758a; margin-top:0px; margin-bottom:30px; font-weight:700; letter-spacing:1px;">SISTEMA DE NAVEGACIÓN</p>', unsafe_allow_html=True)
 
@@ -235,7 +231,6 @@ pct_neg = round((g_neg / g_total) * 100, 1) if g_total > 0 else 0.0
 # DESPLIEGUE POR MÓDULO SELECCIONADO
 # -------------------------------------------------------------
 
-# MÓDULO 1: PANEL DE INYECCIÓN (SCRAPING)
 if modulo_activo == "⚙️ Panel de Inyección (Scraping)":
     st.markdown('<p style="font-size: 38px; font-weight: bold; margin-bottom:0px; letter-spacing:-0.5px;">Panel de Inyección y Cosecha Paralela</p>', unsafe_allow_html=True)
     st.markdown('<p style="font-size: 18px; color: #7f8c8d; margin-top:5px; margin-bottom:40px;">Orquestador centralizado de hilos del S.O. y buffers multiproceso de extracción de Threads, YT, IG y Reddit.</p>', unsafe_allow_html=True)
@@ -245,50 +240,20 @@ if modulo_activo == "⚙️ Panel de Inyección (Scraping)":
     
     c1, c2 = st.columns(2)
     if c1.button("Lanzar Motores Paralelos Playwright", type="primary", use_container_width=True):
-        if not query_sub.strip():
-            st.error("Ingresa una consulta válida.")
+        if not query_sub.strip(): st.error("Ingresa una consulta válida.")
         else:
-            status_container = st.empty()
-            
             stop_event = Event()
             res_q = Queue()
-            
-            # 1. Proceso dedicado a la escritura asíncrona en el CSV
             p_writer = Process(target=csv_writer_process, args=(res_q, stop_event))
             p_writer.start()
             st.session_state.running_processes.append(p_writer)
             
-            # 2. Worker Pool asignado con un semáforo de máximo 2 trabajadores concurrentes
-            # Esto previene el desbordamiento de RAM (OOM) en servidores de 512 MB como Render
-            MAX_CONCURRENT_SCRAPERS = 2
-            semaforo_pool = mp.Semaphore(MAX_CONCURRENT_SCRAPERS)
-            
-            def worker_task(network, query, max_posts, queue_res, stop_evt, proc_id, sema):
-                with sema: # Adquiere un slot del pool concurrente
-                    run_scraper(network, query, max_posts, queue_res, stop_evt, proc_id)
-
             redes_seleccionadas = ["Instagram", "Threads", "YouTube", "Reddit"]
-            procesos_scrapers = []
-            
-            with st.spinner("⚡ Ejecutando Worker Pool concurrente (2 navegadores en paralelo)..."):
-                for i, net in enumerate(redes_seleccionadas):
-                    p = Process(
-                        target=worker_task, 
-                        args=(net, query_sub, max_p, res_q, stop_event, i, semaforo_pool)
-                    )
-                    p.start()
-                    procesos_scrapers.append(p)
-                    st.session_state.running_processes.append(p)
-                
-                # Sincronización: esperar a que los 4 trabajadores del pool completen la tarea
-                for p in procesos_scrapers:
-                    p.join(timeout=180) # Timeout de seguridad por proceso
-                
-                # Detener el escritor del buffer CSV
-                stop_event.set()
-                p_writer.join(timeout=10)
-
-            status_container.success("✅ Cosecha de datos finalizada mediante Worker Pool Concurrente. Explora los registros en el menú.")
+            for i, net in enumerate(redes_seleccionadas):
+                p = Process(target=run_scraper, args=(net, query_sub, max_p, res_q, stop_event, i))
+                p.start()
+                st.session_state.running_processes.append(p)
+            st.success("Motores asíncronos distribuidos en paralelo.")
             
     if c2.button("Lanzar Clasificación Sintáctica de Sentimientos (AI)", use_container_width=True):
         if not os.path.exists("resultados.csv"): st.error("No hay archivo base resultados.csv.")
@@ -309,8 +274,6 @@ if modulo_activo == "⚙️ Panel de Inyección (Scraping)":
             except: pass
             st.success("Pipeline sintáctico de lenguaje natural finalizado.")
 
-   
-# MÓDULO 2: EXPLORADOR DE DATOS
 elif modulo_activo == "🗂️ Explorador de Datos":
     st.markdown('<p style="font-size: 38px; font-weight: bold; margin-bottom:0px; letter-spacing:-0.5px;">Explorador de Datos Estructurados</p>', unsafe_allow_html=True)
     archivos_json = [
@@ -335,7 +298,6 @@ elif modulo_activo == "🗂️ Explorador de Datos":
                 st.dataframe(rows, use_container_width=True)
             else: st.info(f"Sin registros para {nombre}.")
 
-# MÓDULO 3: VISIÓN GLOBAL (DASHBOARD)
 elif modulo_activo == "📊 Visión Global":
     st.markdown('<p style="font-size: 38px; font-weight: bold; margin-bottom:0px; letter-spacing:-0.5px;">Visión Global Unificada</p>', unsafe_allow_html=True)
     k1, k2, k3, k4 = st.columns(4)
@@ -366,7 +328,6 @@ elif modulo_activo == "📊 Visión Global":
             fig.gca().add_artist(centre_circle)
             st.pyplot(fig)
 
-# MÓDULO 4: POR PLATAFORMA
 elif modulo_activo == "📈 Por Plataforma":
     st.markdown('<p style="font-size: 38px; font-weight: bold; margin-bottom:0px; letter-spacing:-0.5px;">Análisis Comparativo por Canal</p>', unsafe_allow_html=True)
     datos_sentimientos = []
@@ -383,11 +344,9 @@ elif modulo_activo == "📈 Por Plataforma":
         neutrales = [d[1].get("Neutral", 0) for d in datos_sentimientos]
         negativos = [d[1].get("Negativo", 0) for d in datos_sentimientos]
         
-        # Base acumulada para apilar las barras correctamente
         bottom_neutral = positivos
         bottom_negativo = [p + n for p, n in zip(positivos, neutrales)]
         
-        # Dibujar las 3 capas
         ax.bar(plataformas, positivos, label='Positivo', color='#2ecc71', width=0.35)
         ax.bar(plataformas, neutrales, bottom=bottom_neutral, label='Neutro', color='#95a5a6', width=0.35)
         ax.bar(plataformas, negativos, bottom=bottom_negativo, label='Negativo', color='#e74c3c', width=0.35)
@@ -395,7 +354,7 @@ elif modulo_activo == "📈 Por Plataforma":
         ax.tick_params(colors='w', labelsize=12)
         ax.legend(facecolor='#1e293b', edgecolor='none', labelcolor='white')
         st.pyplot(fig)
-# MÓDULO 5: STORYTELLING AI
+
 elif modulo_activo == "🤖 Storytelling AI":
     st.markdown('<div style="display: flex; align-items: center; margin-bottom: 35px; gap: 20px;"><div style="background-color: #1e293b; padding: 15px; border-radius: 12px;"><p style="font-size: 40px; margin: 0; line-height: 1;">🤖</p></div><div><p style="font-size: 38px; font-weight: bold; margin: 0; letter-spacing: -0.5px;">Informe Narrativo de IA Contextual</p></div></div>', unsafe_allow_html=True)
     archivo_premium = "reporte_storytelling_premium.md"
