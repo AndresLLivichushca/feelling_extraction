@@ -24,7 +24,7 @@ class InstagramScraper:
                     state = json.load(f)
                 if "cookies" in state:
                     context.add_cookies(state["cookies"])
-                print(f"[Instagram] Sesión recuperada de {self.session_path} ✅")
+                print(f"[Instagram] Sesión recuperada de {self.session_path}")
                 return True
             except Exception as e:
                 print(f"[Instagram] Advertencia cargando sesión: {e}")
@@ -134,7 +134,7 @@ class InstagramScraper:
                     self.result_queue.put(data_row)
                     processed_ids.add(post_shortcode)
                     extracted_count += 1
-                    print(f"[Instagram] ✓ ¡GUARDADO! {extracted_count}/{self.max_posts}: IG_{post_shortcode[:8]}")
+                    print(f"[Instagram] ¡GUARDADO! {extracted_count}/{self.max_posts}: IG_{post_shortcode[:8]}")
                     
                     page.keyboard.press("Escape")
                     page.wait_for_timeout(1200)

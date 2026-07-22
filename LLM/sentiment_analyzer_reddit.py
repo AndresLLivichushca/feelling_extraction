@@ -241,7 +241,7 @@ def generar_reporte(resultados: List[Dict]) -> str:
         Fecha de Análisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         Modelo: {MODELO}
         ======================================================================
-        📊 ESTADÍSTICAS DEL DEBATE RECOLECTADO
+        ESTADÍSTICAS DEL DEBATE RECOLECTADO
         ======================================================================
         Total Hilos Procesados: {total_publicaciones}
         Total Publicaciones de Autores: {total_posts}
@@ -249,18 +249,18 @@ def generar_reporte(resultados: List[Dict]) -> str:
         ──────────────────────────────────────────────────────────────
         TOTAL DE ELEMENTOS ANALIZADOS: {total_elementos} (Posts + Comentarios)
         ======================================================================
-        📊 DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Forzado Antisesgo)
+        DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Forzado Antisesgo)
         ======================================================================
         • Positivo: {stats["Positivo"]} ({pct("Positivo")}%)
         • Negativo: {stats["Negativo"]} ({pct("Negativo")}%)
         • Neutral:  {stats["Neutral"]} ({pct("Neutral")}%)
         ======================================================================
-        ⚡ RENDIMIENTO COMPUTACIONAL ASÍNCRONO
+        RENDIMIENTO COMPUTACIONAL ASÍNCRONO
         ======================================================================
         Tiempo Total Asíncrono (Wallclock): {tiempo_total_wallclock:.4f}s
         Total de Llamadas Concurrentes a la API: {len(tiempos_api)}
         ======================================================================
-        ✅ JSON Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
+        Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
         ======================================================================
         """
 

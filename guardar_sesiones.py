@@ -5,7 +5,7 @@ from playwright.sync_api import sync_playwright
 def gestionar_login(plataforma, url_login):
     archivo_cookies = f"{plataforma.lower()}_cookies.json"
     print(f"\n==================================================")
-    print(f"🔐 CONFIGURANDO SESIÓN PARA: {plataforma.upper()}")
+    print(f"CONFIGURANDO SESIÓN PARA: {plataforma.upper()}")
     print(f"==================================================")
     
     with sync_playwright() as p:
@@ -38,9 +38,9 @@ def gestionar_login(plataforma, url_login):
             cookies = context.cookies()
             with open(archivo_cookies, 'w', encoding='utf-8') as f:
                 json.dump(cookies, f, indent=2)
-            print(f"✅ ¡ÉXITO! Cookies de {plataforma} guardadas en: '{archivo_cookies}'")
+            print(f"¡ÉXITO! Cookies de {plataforma} guardadas en: '{archivo_cookies}'")
         except Exception as e:
-            print(f"❌ No se pudieron guardar las cookies de {plataforma}: {e}")
+            print(f"No se pudieron guardar las cookies de {plataforma}: {e}")
             
         browser.close()
         
@@ -53,11 +53,11 @@ if __name__ == "__main__":
         ("YouTube", "https://www.youtube.com/")  # Abre YouTube para loguearte con Google si lo deseas
     ]
     
-    print("🚀 INICIANDO ASISTENTE DE AUTENTICACIÓN PRE-CARGADA (THREADS EDITION)")
+    print("INICIANDO ASISTENTE DE AUTENTICACIÓN PRE-CARGADA (THREADS EDITION)")
     for nombre, url in plataformas:
         gestionar_login(nombre, url)
         
     print("\n==================================================")
-    print("🎉 ¡TODO LISTO! Todas las credenciales están cargadas.")
+    print("¡TODO LISTO! Todas las credenciales están cargadas.")
     print("Ya puedes ejecutar 'streamlit run app_web.py' con total seguridad.")
     print("==================================================")

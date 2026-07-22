@@ -2,12 +2,12 @@
         ======================================================================
         REPORTE DE ANÁLISIS DE SENTIMIENTOS - INSTAGRAM (OpenAI Engine)
         ======================================================================
-        Fecha de Análisis: 2026-07-21 15:16:41
+        Fecha de Análisis: 2026-07-21 20:46:27
         Modelo Utilizado: gpt-4o-mini
         Modo de Procesamiento: Concurrente (máx 10 tareas)
 
         ======================================================================
-        📊 ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
+        ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
         ======================================================================
         Total de Publicaciones (Filas CSV): 10
         Total de Títulos/Captions Analizados: 10
@@ -16,20 +16,20 @@
         TOTAL DE ELEMENTOS ANALIZADOS: 110 (Posts + Comentarios)
 
         ======================================================================
-        📊 DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
+        DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
         ======================================================================
-        • Positivo: 6 (5.45%)
+        • Positivo: 3 (2.73%)
         • Negativo: 12 (10.91%)
-        • Neutral:  92 (83.64%)
+        • Neutral:  95 (86.36%)
 
         ======================================================================
-        ⚡ MÉTRICAS DE RENDIMIENTO CONCURRENTE
+        MÉTRICAS DE RENDIMIENTO CONCURRENTE
         ======================================================================
-        Tiempo Total de Procesamiento (Wallclock): 3.9649 segundos
-        Tiempo Promedio por Publicación: 0.3965 segundos
+        Tiempo Total de Procesamiento (Wallclock): 3.1011 segundos
+        Tiempo Promedio por Publicación: 0.3101 segundos
         Tiempo Combinado en Llamadas API: 0.0000 segundos
         Total de Peticiones API Exitosas: 0
         ======================================================================
-        ✅ Juego de Datos Estructurado Guardado: analisis_instagram_completo.json
+        Datos Estructurado Guardado: analisis_instagram_completo.json
         ======================================================================
         

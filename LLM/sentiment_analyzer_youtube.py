@@ -235,7 +235,7 @@ def generar_reporte(resultados: List[Dict]) -> str:
         Fecha de Análisis: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         Modelo: {MODELO}
         ======================================================================
-        📊 ESTADÍSTICAS DEL CONTENIDO EN VIDEO
+        ESTADÍSTICAS DEL CONTENIDO EN VIDEO
         ======================================================================
         Total Videos Procesados: {total_publicaciones}
         Total Títulos de Videos Analizados: {total_posts}
@@ -243,18 +243,18 @@ def generar_reporte(resultados: List[Dict]) -> str:
         ──────────────────────────────────────────────────────────────
         TOTAL DE ELEMENTOS ANALIZADOS: {total_elementos} (Títulos + Comentarios)
         ======================================================================
-        📊 DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
+        DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
         ======================================================================
         • Positivo: {stats["Positivo"]} ({pct("Positivo")}%)
         • Negativo: {stats["Negativo"]} ({pct("Negativo")}%)
         • Neutral:  {stats["Neutral"]} ({pct("Neutral")}%)
         ======================================================================
-        ⚡ EFICIENCIA COMPUTACIONAL
+        EFICIENCIA COMPUTACIONAL
         ======================================================================
         Tiempo Total del Proceso (Wallclock): {tiempo_total_wallclock:.4f}s
         Total Llamadas API de OpenAI: {len(tiempos_api)}
         ======================================================================
-        ✅ Almacenamiento Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
+        Almacenamiento Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
         ======================================================================
         """
 

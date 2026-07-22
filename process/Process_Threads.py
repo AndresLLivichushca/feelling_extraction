@@ -24,7 +24,7 @@ class ThreadsScraper:
                     with open(archivo_sesion, 'r', encoding='utf-8') as f:
                         state = json.load(f)
                         if "cookies" in state: page.context.add_cookies(state["cookies"])
-                    print(f"[Threads] Sesión cargada con éxito desde {archivo_sesion} ✅")
+                    print(f"[Threads] Sesión cargada con éxito desde {archivo_sesion}")
                 except Exception as e:
                     print(f"[Threads] Advertencia al inyectar sesión: {e}")
 

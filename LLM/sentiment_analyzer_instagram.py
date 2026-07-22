@@ -253,7 +253,7 @@ def generar_reporte(resultados: List[Dict]) -> str:
         Modo de Procesamiento: Concurrente (máx {MAX_CONCURRENT_TASKS} tareas)
 
         ======================================================================
-        📊 ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
+        ESTADÍSTICAS DE ELEMENTOS ANALIZADOS
         ======================================================================
         Total de Publicaciones (Filas CSV): {total_publicaciones}
         Total de Títulos/Captions Analizados: {total_posts}
@@ -262,21 +262,21 @@ def generar_reporte(resultados: List[Dict]) -> str:
         TOTAL DE ELEMENTOS ANALIZADOS: {total_elementos} (Posts + Comentarios)
 
         ======================================================================
-        📊 DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
+        DISTRIBUCIÓN DE SENTIMIENTOS (Ajuste Antisesgo)
         ======================================================================
         • Positivo: {stats['Positivo']} ({porcentajes['Positivo']}%)
         • Negativo: {stats['Negativo']} ({porcentajes['Negativo']}%)
         • Neutral:  {stats['Neutral']} ({porcentajes['Neutral']}%)
 
         ======================================================================
-        ⚡ MÉTRICAS DE RENDIMIENTO CONCURRENTE
+        MÉTRICAS DE RENDIMIENTO CONCURRENTE
         ======================================================================
         Tiempo Total de Procesamiento (Wallclock): {tiempo_total_proc:.4f} segundos
         Tiempo Promedio por Publicación: {tiempo_promedio:.4f} segundos
         Tiempo Combinado en Llamadas API: {tiempo_api_total:.4f} segundos
         Total de Peticiones API Exitosas: {len(tiempos_api)}
         ======================================================================
-        ✅ Juego de Datos Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
+        Datos Estructurado Guardado: {ARCHIVO_RESULTADOS_JSON}
         ======================================================================
         """
     return reporte
